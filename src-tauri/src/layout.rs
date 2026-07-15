@@ -107,6 +107,29 @@ pub fn build_scene(data: &RepoData) -> SceneModel {
         });
     }
 
+    // 머지 이벤트
+    let mut merges: Vec<MergeEvent> = Vec::new();
+    for c in &data.commits {
+        if c.parents.len() < 2 {
+            continue;
+        }
+        let into_branch = lanes.get(&c.id).cloned().unwrap_or_default();
+        // 2번째 부모의 lane = 유입 브랜치
+        let from_branch = c
+            .parents
+            .get(1)
+            .and_then(|p| lanes.get(p))
+            .cloned()
+            .unwrap_or_else(|| into_branch.clone());
+        merges.push(MergeEvent {
+            commit_id: c.id.clone(),
+            into_branch_id: into_branch,
+            from_branch_id: from_branch,
+            timestamp: c.timestamp,
+            position: pos_by_id.get(&c.id).copied().unwrap_or([0.0, 0.0, 0.0]),
+        });
+    }
+
     SceneModel {
         repo: RepoInfo {
             name: data.name.clone(),
@@ -117,7 +140,7 @@ pub fn build_scene(data: &RepoData) -> SceneModel {
         authors,
         branches: stars,
         commits: commit_nodes,
-        merges: Vec::new(),
+        merges,
         meta: SceneMeta {
             total_commits: data.commits.len(),
             sampled: data.sampled,
@@ -306,5 +329,42 @@ mod tests {
         for coord in scene.commits[0].position {
             assert!(coord.is_finite());
         }
+    }
+
+    #[test]
+    fn merge_events_created_for_multi_parent_commits() {
+        let data = repo(
+            vec![
+                commit("c4", "a@x.com", 400, &["c2", "c3"]), // merge: into main, from feature
+                commit("c3", "b@x.com", 300, &["c1"]),
+                commit("c2", "a@x.com", 200, &["c1"]),
+                commit("c1", "a@x.com", 100, &[]),
+            ],
+            vec![
+                RawBranch { name: "main".into(), head: "c4".into(), is_default: true },
+                RawBranch { name: "feature".into(), head: "c3".into(), is_default: false },
+            ],
+        );
+        let scene = build_scene(&data);
+        assert_eq!(scene.merges.len(), 1);
+        let m = &scene.merges[0];
+        assert_eq!(m.commit_id, "c4");
+        assert_eq!(m.into_branch_id, "main");
+        assert_eq!(m.from_branch_id, "feature");
+        // 머지 위치 = 머지 커밋 위치
+        let c4 = scene.commits.iter().find(|c| c.id == "c4").unwrap();
+        assert_eq!(m.position, c4.position);
+    }
+
+    #[test]
+    fn no_merges_in_linear_history() {
+        let data = repo(
+            vec![
+                commit("c2", "a@x.com", 200, &["c1"]),
+                commit("c1", "a@x.com", 100, &[]),
+            ],
+            vec![RawBranch { name: "main".into(), head: "c2".into(), is_default: true }],
+        );
+        assert!(build_scene(&data).merges.is_empty());
     }
 }
