@@ -18,7 +18,8 @@ export default function App() {
       const model = await loadRepo(selected);
       setScene(model);
     } catch (e) {
-      setError(String(e));
+      const msg = String(e);
+      setError(msg.includes('저장소를 열 수 없') ? 'git 저장소가 아니거나 열 수 없는 폴더입니다.' : msg);
     } finally {
       setLoading(false);
     }
