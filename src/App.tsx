@@ -1,51 +1,53 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import { useState, useCallback } from 'react';
+import { open } from '@tauri-apps/plugin-dialog';
+import { loadRepo } from './api';
+import type { SceneModel } from './bindings';
+import { SceneView } from './scene/SceneView';
 
-function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+export default function App() {
+  const [scene, setScene] = useState<SceneModel | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+  const pickAndLoad = useCallback(async () => {
+    setError(null);
+    const selected = await open({ directory: true, multiple: false });
+    if (typeof selected !== 'string') return; // 취소
+    setLoading(true);
+    try {
+      const model = await loadRepo(selected);
+      setScene(model);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div style={{ position: 'fixed', inset: 0, background: '#04050c', color: '#e6eefc', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 10 }}>
+        <button
+          onClick={pickAndLoad}
+          disabled={loading}
+          style={{
+            padding: '10px 20px', borderRadius: 8, border: '1px solid #3a6df0',
+            background: loading ? '#1a2740' : '#0d1a33', color: '#dbe7ff',
+            cursor: loading ? 'default' : 'pointer', fontSize: 15,
+          }}
+        >
+          {loading ? '불러오는 중…' : '저장소 불러오기'}
+        </button>
+        {error && <p style={{ color: '#ff7a90', marginTop: 8 }}>에러: {error}</p>}
       </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
 
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+      {!scene && !loading && (
+        <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: '#5f7196' }}>
+          <p>git 저장소 폴더를 불러오면 우주가 펼쳐집니다.</p>
+        </div>
+      )}
+
+      {scene && <SceneView scene={scene} />}
+    </div>
   );
 }
-
-export default App;
