@@ -1,0 +1,21 @@
+# Superpowers 브레인스토밍 컴패니언 (로컬 목업 — 커밋 제외)
+.superpowers/
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Tauri / Rust
+src-tauri/target/
+target/
+
+# 로그·환경
+.env
+.env.*
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
