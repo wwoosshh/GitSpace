@@ -8,6 +8,7 @@ import { OrbitLines } from './OrbitLines';
 import { BranchStars } from './BranchStars';
 import { CommitNodes } from './CommitNodes';
 import { MergeFlashes } from './MergeFlashes';
+import { Effects } from './Effects';
 
 export function SceneView({ scene }: { scene: SceneModel }) {
   const [t] = useState(1); // 다음 태스크에서 스크러버로 연결
@@ -25,6 +26,7 @@ export function SceneView({ scene }: { scene: SceneModel }) {
         <CommitNodes commits={visible.commits} />
         <MergeFlashes merges={visible.merges} />
         <OrbitControls makeDefault enableDamping dampingFactor={0.06} minDistance={6} maxDistance={800} autoRotate autoRotateSpeed={0.25} />
+        <Effects />
       </Canvas>
       {scene.meta.sampled && (
         <div style={{ position: 'absolute', bottom: 12, left: 12, color: '#ffd166', fontSize: 13 }}>
