@@ -3,7 +3,6 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import type { SceneModel } from '../bindings';
 import { selectVisible } from '../lib/timeline';
-import { Starfield } from './Starfield';
 import { Edges } from './Edges';
 import { BranchStars } from './BranchStars';
 import { CommitNodes } from './CommitNodes';
@@ -53,7 +52,6 @@ export function SceneView({ scene }: { scene: SceneModel }) {
         <color attach="background" args={['#04050c']} />
         <ambientLight intensity={0.25} />
         <pointLight position={[0, 0, 0]} intensity={2} />
-        <Starfield />
         <Edges commits={visible.commits} />
         <BranchStars branches={visible.branches} />
         <CommitNodes commits={visible.commits} />
