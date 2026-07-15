@@ -4,7 +4,7 @@ import { OrbitControls } from '@react-three/drei';
 import type { SceneModel } from '../bindings';
 import { selectVisible } from '../lib/timeline';
 import { Starfield } from './Starfield';
-import { OrbitLines } from './OrbitLines';
+import { Edges } from './Edges';
 import { BranchStars } from './BranchStars';
 import { CommitNodes } from './CommitNodes';
 import { MergeFlashes } from './MergeFlashes';
@@ -47,16 +47,16 @@ export function SceneView({ scene }: { scene: SceneModel }) {
 
   return (
     <>
-      <Canvas camera={{ position: [0, 12, 34], fov: 50, near: 0.1, far: 3000 }} dpr={[1, 2]} gl={{ antialias: true }}>
+      <Canvas camera={{ position: [30, 22, 62], fov: 50, near: 0.1, far: 4000 }} dpr={[1, 2]} gl={{ antialias: true }}>
         <color attach="background" args={['#04050c']} />
         <ambientLight intensity={0.25} />
         <pointLight position={[0, 0, 0]} intensity={2} />
         <Starfield />
-        <OrbitLines branches={scene.branches} />
+        <Edges commits={visible.commits} />
         <BranchStars branches={visible.branches} />
         <CommitNodes commits={visible.commits} />
         <MergeFlashes merges={visible.merges} />
-        <OrbitControls makeDefault enableDamping dampingFactor={0.06} minDistance={6} maxDistance={800} autoRotate={!playing} autoRotateSpeed={0.25} />
+        <OrbitControls makeDefault enableDamping dampingFactor={0.06} minDistance={4} maxDistance={800} target={[30, 0, 0]} />
         <Effects />
       </Canvas>
       <Scrubber

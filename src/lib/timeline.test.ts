@@ -11,9 +11,9 @@ const scene: SceneModel = {
     headCommitId: 'c3', position: [0, 0, 0], color: '#4a90ff', bornAt: 300,
   }],
   commits: [
-    { id: 'c1', branchId: 'main', authorId: 'a@x.com', timestamp: 100, message: 'a', position: [0,0,0], color: '#4a90ff', isMerge: false },
-    { id: 'c2', branchId: 'main', authorId: 'a@x.com', timestamp: 200, message: 'b', position: [0,0,0], color: '#4a90ff', isMerge: false },
-    { id: 'c3', branchId: 'main', authorId: 'a@x.com', timestamp: 300, message: 'c', position: [0,0,0], color: '#4a90ff', isMerge: false },
+    { id: 'c1', parents: [], branchId: 'main', authorId: 'a@x.com', timestamp: 100, message: 'a', position: [0,0,0], color: '#4a90ff', isMerge: false },
+    { id: 'c2', parents: ['c1'], branchId: 'main', authorId: 'a@x.com', timestamp: 200, message: 'b', position: [0,0,0], color: '#4a90ff', isMerge: false },
+    { id: 'c3', parents: ['c2'], branchId: 'main', authorId: 'a@x.com', timestamp: 300, message: 'c', position: [0,0,0], color: '#4a90ff', isMerge: false },
   ],
   merges: [],
   meta: { totalCommits: 3, sampled: false },

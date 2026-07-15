@@ -7,7 +7,7 @@ export interface Star {
   position: [number, number, number]; color: string; bornAt: number;
 }
 export interface CommitNode {
-  id: string; branchId: string; authorId: string; timestamp: number;
+  id: string; parents: string[]; branchId: string; authorId: string; timestamp: number;
   message: string; position: [number, number, number]; color: string; isMerge: boolean;
 }
 export interface MergeEvent {
