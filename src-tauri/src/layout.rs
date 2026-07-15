@@ -127,4 +127,19 @@ mod tests {
         assert_eq!(scene.timeline.end, 0);
         assert_eq!(scene.meta.total_commits, 0);
     }
+
+    #[test]
+    fn authors_deduplicate_commits_from_same_email() {
+        let data = repo(
+            vec![
+                commit("c2", "a@x.com", 200, &["c1"]),
+                commit("c1", "a@x.com", 100, &[]),
+            ],
+            vec![RawBranch { name: "main".into(), head: "c2".into(), is_default: true }],
+        );
+        let scene = build_scene(&data);
+        // 같은 email의 두 커밋 → 작성자 1명으로 유일화
+        assert_eq!(scene.authors.len(), 1);
+        assert_eq!(scene.authors[0].email, "a@x.com");
+    }
 }
