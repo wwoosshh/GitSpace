@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Html } from '@react-three/drei';
 import type { Star } from '../bindings';
 
 function BranchStar({ star }: { star: Star }) {
   const [hovered, setHovered] = useState(false);
+  useEffect(() => () => { document.body.style.cursor = 'auto'; }, []);
   const r = star.isDefault ? 1.4 : 1.0;
   return (
     <mesh

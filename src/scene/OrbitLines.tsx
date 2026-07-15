@@ -25,7 +25,7 @@ export function OrbitLines({ branches }: { branches: Star[] }) {
   // 브랜치를 백엔드와 동일 순서(default 먼저, 이름순)로 정렬해 lane 인덱스 부여
   const ordered = useMemo(() => {
     return [...branches].sort(
-      (a, b) => Number(b.isDefault) - Number(a.isDefault) || a.name.localeCompare(b.name),
+      (a, b) => Number(b.isDefault) - Number(a.isDefault) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0),
     );
   }, [branches]);
 
