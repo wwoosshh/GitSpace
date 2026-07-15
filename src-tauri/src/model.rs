@@ -83,6 +83,7 @@ pub struct Star {
 #[serde(rename_all = "camelCase")]
 pub struct CommitNode {
     pub id: String,
+    pub parents: Vec<String>,
     pub branch_id: String,
     pub author_id: String,
     pub timestamp: i64,

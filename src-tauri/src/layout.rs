@@ -7,11 +7,20 @@ const PALETTE: [&str; 8] = [
     "#c07bff", "#ffd166", "#4ecdc4", "#f78fb3",
 ];
 
-const BASE_RADIUS: f32 = 6.0;
-const RADIUS_STEP: f32 = 4.0;
-const INCLINATION_STEP: f32 = 0.18; // radians per lane
-const TURNS: f32 = 1.5;
-const TWO_PI: f32 = std::f32::consts::TAU;
+const TIME_LENGTH: f32 = 60.0;
+const LANE_RADIUS: f32 = 8.0;
+const GOLDEN: f32 = 2.399963; // golden angle (rad), even 3D fan
+
+/// 시간축(X) + 브랜치 lane의 3D 팬 오프셋
+fn flow_position(lane: usize, t01: f32) -> [f32; 3] {
+    let x = t01 * TIME_LENGTH;
+    if lane == 0 {
+        [x, 0.0, 0.0]
+    } else {
+        let a = (lane - 1) as f32 * GOLDEN;
+        [x, LANE_RADIUS * a.cos(), LANE_RADIUS * a.sin()]
+    }
+}
 
 /// commit id -> branch name. 기본 브랜치 먼저, 그다음 이름순으로 first-parent 워크하며
 /// 아직 소유되지 않은 커밋을 그 브랜치에 배정.
@@ -68,12 +77,13 @@ pub fn build_scene(data: &RepoData) -> SceneModel {
         });
         let idx = branch_index.get(branch.as_str()).copied().unwrap_or(0);
         let t01 = (c.timestamp - timeline.start) as f32 / span;
-        let position = orbit_position(idx, t01);
+        let position = flow_position(idx, t01);
         pos_by_id.insert(c.id.clone(), position);
 
         let color = author_color.get(c.author_email.as_str()).copied().unwrap_or("#ffffff");
         commit_nodes.push(CommitNode {
             id: c.id.clone(),
+            parents: c.parents.clone(),
             branch_id: branch,
             author_id: c.author_email.clone(),
             timestamp: c.timestamp,
@@ -146,19 +156,6 @@ pub fn build_scene(data: &RepoData) -> SceneModel {
             sampled: data.sampled,
         },
     }
-}
-
-/// 궤도 위 위치: XZ 평면 타원을 lane 경사만큼 X축 회전
-fn orbit_position(lane: usize, t01: f32) -> [f32; 3] {
-    let radius = BASE_RADIUS + lane as f32 * RADIUS_STEP;
-    let incl = lane as f32 * INCLINATION_STEP;
-    let angle = t01 * TWO_PI * TURNS;
-    let px = angle.cos() * radius;
-    let pz = angle.sin() * radius;
-    // X축 회전 (py = 0)
-    let y = -pz * incl.sin();
-    let z = pz * incl.cos();
-    [px, y, z]
 }
 
 fn build_timeline(commits: &[RawCommit]) -> Timeline {
@@ -366,5 +363,50 @@ mod tests {
             vec![RawBranch { name: "main".into(), head: "c2".into(), is_default: true }],
         );
         assert!(build_scene(&data).merges.is_empty());
+    }
+
+    #[test]
+    fn main_commits_on_center_axis_branch_commits_offset() {
+        // main: c1<-c2<-c4(merge), feature: c1<-c3
+        let data = repo(
+            vec![
+                commit("c4", "a@x.com", 400, &["c2", "c3"]),
+                commit("c3", "b@x.com", 300, &["c1"]),
+                commit("c2", "a@x.com", 200, &["c1"]),
+                commit("c1", "a@x.com", 100, &[]),
+            ],
+            vec![
+                RawBranch { name: "main".into(), head: "c4".into(), is_default: true },
+                RawBranch { name: "feature".into(), head: "c3".into(), is_default: false },
+            ],
+        );
+        let scene = build_scene(&data);
+        let by_id: std::collections::HashMap<_, _> =
+            scene.commits.iter().map(|c| (c.id.clone(), c)).collect();
+        // main-owned commits sit on the center axis (y=z=0)
+        for id in ["c1", "c2", "c4"] {
+            let p = by_id[id].position;
+            assert_eq!(p[1], 0.0, "{id} y");
+            assert_eq!(p[2], 0.0, "{id} z");
+        }
+        // feature commit is offset off-axis
+        let f = by_id["c3"].position;
+        assert!(f[1] != 0.0 || f[2] != 0.0, "feature commit should be off-axis");
+    }
+
+    #[test]
+    fn commit_nodes_carry_parents() {
+        let data = repo(
+            vec![
+                commit("c2", "a@x.com", 200, &["c1"]),
+                commit("c1", "a@x.com", 100, &[]),
+            ],
+            vec![RawBranch { name: "main".into(), head: "c2".into(), is_default: true }],
+        );
+        let scene = build_scene(&data);
+        let c2 = scene.commits.iter().find(|c| c.id == "c2").unwrap();
+        assert_eq!(c2.parents, vec!["c1".to_string()]);
+        let c1 = scene.commits.iter().find(|c| c.id == "c1").unwrap();
+        assert!(c1.parents.is_empty());
     }
 }
