@@ -16,7 +16,7 @@ const scene: SceneModel = {
     { id: 'c3', parents: ['c2'], branchId: 'main', authorId: 'a@x.com', timestamp: 300, message: 'c', position: [0,0,0], color: '#4a90ff', isMerge: false },
   ],
   merges: [],
-  meta: { totalCommits: 3, sampled: false },
+  meta: { totalCommits: 3, sampled: false, axisLength: 5 },
 };
 
 describe('selectVisible', () => {

@@ -108,4 +108,5 @@ pub struct MergeEvent {
 pub struct SceneMeta {
     pub total_commits: usize,
     pub sampled: bool,
+    pub axis_length: f32,
 }

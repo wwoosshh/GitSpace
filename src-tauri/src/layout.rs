@@ -7,13 +7,12 @@ const PALETTE: [&str; 8] = [
     "#c07bff", "#ffd166", "#4ecdc4", "#f78fb3",
 ];
 
-const TIME_LENGTH: f32 = 60.0;
+const COMMIT_SPACING: f32 = 2.5;
 const LANE_RADIUS: f32 = 8.0;
 const GOLDEN: f32 = 2.399963; // golden angle (rad), even 3D fan
 
 /// 시간축(X) + 브랜치 lane의 3D 팬 오프셋
-fn flow_position(lane: usize, t01: f32) -> [f32; 3] {
-    let x = t01 * TIME_LENGTH;
+fn flow_position(lane: usize, x: f32) -> [f32; 3] {
     if lane == 0 {
         [x, 0.0, 0.0]
     } else {
@@ -65,7 +64,11 @@ pub fn build_scene(data: &RepoData) -> SceneModel {
         .map(|(i, b)| (b.name.as_str(), i))
         .collect();
 
-    let span = (timeline.end - timeline.start).max(1) as f32;
+    // 전역 시간순 순위(오래된 순 0부터), id로 동점 결정
+    let mut order: Vec<&RawCommit> = data.commits.iter().collect();
+    order.sort_by(|a, b| a.timestamp.cmp(&b.timestamp).then(a.id.cmp(&b.id)));
+    let rank_by_id: std::collections::HashMap<&str, usize> =
+        order.iter().enumerate().map(|(i, c)| (c.id.as_str(), i)).collect();
 
     // 커밋 노드
     let mut commit_nodes: Vec<CommitNode> = Vec::with_capacity(data.commits.len());
@@ -76,8 +79,9 @@ pub fn build_scene(data: &RepoData) -> SceneModel {
             ordered_branches.first().map(|b| b.name.clone()).unwrap_or_else(|| "detached".into())
         });
         let idx = branch_index.get(branch.as_str()).copied().unwrap_or(0);
-        let t01 = (c.timestamp - timeline.start) as f32 / span;
-        let position = flow_position(idx, t01);
+        let rank = rank_by_id.get(c.id.as_str()).copied().unwrap_or(0);
+        let x = rank as f32 * COMMIT_SPACING;
+        let position = flow_position(idx, x);
         pos_by_id.insert(c.id.clone(), position);
 
         let color = author_color.get(c.author_email.as_str()).copied().unwrap_or("#ffffff");
@@ -154,6 +158,11 @@ pub fn build_scene(data: &RepoData) -> SceneModel {
         meta: SceneMeta {
             total_commits: data.commits.len(),
             sampled: data.sampled,
+            axis_length: if data.commits.is_empty() {
+                0.0
+            } else {
+                (data.commits.len() - 1) as f32 * COMMIT_SPACING
+            },
         },
     }
 }
@@ -392,6 +401,26 @@ mod tests {
         // feature commit is offset off-axis
         let f = by_id["c3"].position;
         assert!(f[1] != 0.0 || f[2] != 0.0, "feature commit should be off-axis");
+    }
+
+    #[test]
+    fn commits_have_distinct_x_and_axis_scales() {
+        let data = repo(
+            vec![
+                commit("c3", "a@x.com", 300, &["c2"]),
+                commit("c2", "a@x.com", 200, &["c1"]),
+                commit("c1", "a@x.com", 100, &[]),
+            ],
+            vec![RawBranch { name: "main".into(), head: "c3".into(), is_default: true }],
+        );
+        let scene = build_scene(&data);
+        let xs: Vec<f32> = scene.commits.iter().map(|c| c.position[0]).collect();
+        for i in 0..xs.len() {
+            for j in (i + 1)..xs.len() {
+                assert_ne!(xs[i], xs[j], "commit x positions must be distinct");
+            }
+        }
+        assert_eq!(scene.meta.axis_length, 2.0 * 2.5); // (3-1)*COMMIT_SPACING
     }
 
     #[test]

@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import type { SceneModel } from '../bindings';
 import { selectVisible } from '../lib/timeline';
 import { Starfield } from './Starfield';
@@ -36,6 +36,7 @@ export function SceneView({ scene }: { scene: SceneModel }) {
   useEffect(() => { if (t >= 1 && playing) setPlaying(false); }, [t, playing]);
 
   const visible = useMemo(() => selectVisible(scene, t), [scene, t]);
+  const L = Math.max(scene.meta.axisLength, 20);
 
   if (scene.commits.length === 0) {
     return (
@@ -47,7 +48,8 @@ export function SceneView({ scene }: { scene: SceneModel }) {
 
   return (
     <>
-      <Canvas camera={{ position: [30, 22, 62], fov: 50, near: 0.1, far: 4000 }} dpr={[1, 2]} gl={{ antialias: true }}>
+      <Canvas dpr={[1, 2]} gl={{ antialias: true }}>
+        <PerspectiveCamera makeDefault fov={50} near={0.1} far={30000} position={[L / 2, L * 0.35 + 12, L * 0.7 + 18]} />
         <color attach="background" args={['#04050c']} />
         <ambientLight intensity={0.25} />
         <pointLight position={[0, 0, 0]} intensity={2} />
@@ -56,7 +58,7 @@ export function SceneView({ scene }: { scene: SceneModel }) {
         <BranchStars branches={visible.branches} />
         <CommitNodes commits={visible.commits} />
         <MergeFlashes merges={visible.merges} />
-        <OrbitControls makeDefault enableDamping dampingFactor={0.06} minDistance={4} maxDistance={800} target={[30, 0, 0]} />
+        <OrbitControls makeDefault enableDamping dampingFactor={0.06} minDistance={4} maxDistance={20000} target={[L / 2, 0, 0]} />
         <Effects />
       </Canvas>
       <Scrubber

@@ -14,7 +14,7 @@ export interface MergeEvent {
   commitId: string; intoBranchId: string; fromBranchId: string;
   timestamp: number; position: [number, number, number];
 }
-export interface SceneMeta { totalCommits: number; sampled: boolean }
+export interface SceneMeta { totalCommits: number; sampled: boolean; axisLength: number }
 export interface SceneModel {
   repo: RepoInfo; timeline: Timeline; authors: Author[];
   branches: Star[]; commits: CommitNode[]; merges: MergeEvent[]; meta: SceneMeta;
