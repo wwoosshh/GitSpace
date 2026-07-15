@@ -56,7 +56,7 @@ export function SceneView({ scene }: { scene: SceneModel }) {
         value={t}
         onChange={(v) => { setPlaying(false); setT(v); }}
         playing={playing}
-        onTogglePlay={() => setPlaying((p) => !p)}
+        onTogglePlay={() => { if (!playing && t >= 1) setT(0); setPlaying((p) => !p); }}
       />
       {scene.meta.sampled && (
         <div style={{ position: 'absolute', bottom: 12, left: 12, color: '#ffd166', fontSize: 13 }}>
