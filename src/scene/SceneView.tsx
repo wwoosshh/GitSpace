@@ -37,6 +37,14 @@ export function SceneView({ scene }: { scene: SceneModel }) {
 
   const visible = useMemo(() => selectVisible(scene, t), [scene, t]);
 
+  if (scene.commits.length === 0) {
+    return (
+      <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: '#5f7196' }}>
+        <p>이 저장소에는 아직 커밋이 없습니다 — 빈 우주입니다. 🌌</p>
+      </div>
+    );
+  }
+
   return (
     <>
       <Canvas camera={{ position: [0, 12, 34], fov: 50, near: 0.1, far: 3000 }} dpr={[1, 2]} gl={{ antialias: true }}>
